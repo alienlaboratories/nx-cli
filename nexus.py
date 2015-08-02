@@ -1,11 +1,9 @@
 #!/usr/bin/python
 
+import argparse
+import os
 import sys
 from collections import defaultdict
-import os
-
-# TODO(burdon): Fails if not set; (default to ~/.nexus.log)
-LOG_FILE = os.environ['NEXUS_LOG']
 
 # TODO(burdon): By default add command line to log (e.g., memo !!)
 # TODO(burdon): List all commands: memo --list
@@ -18,7 +16,6 @@ LOG_FILE = os.environ['NEXUS_LOG']
 # TODO(burdon): Install via brew: http://formalfriday.club/2015/01/05/creating-your-own-homebrew-tap-and-formula.html
 
 
-# TODO(burdon): Move to class.
 class Parser(object):
 
     def __init__(self, filename):
@@ -36,10 +33,11 @@ class Parser(object):
                     self.command_map[command].append(line)
                     self.command_map[command].sort()
 
-    def dump(self, command=None):
+    def dump(self, args=None):
+        # print args
         print
-        if command:
-            for line in self.command_map[command]:
+        if args:
+            for line in self.command_map[args[0]]:
                 print line
             print
         else:
@@ -57,21 +55,23 @@ class Parser(object):
         f.close()
 
 
-def main():
-    # TODO(burdon): Match anything.
-    parser = Parser(LOG_FILE)
-    if len(sys.argv) == 2:
-        command = sys.argv[1]
-        parser.dump(command)
-    else:
-        parser.dump()
-        parser.write()
+# Parser
+parser = argparse.ArgumentParser(description='NX CLI')
+parser.add_argument('--file', help='Log file.')
+parser.add_argument('cmd', nargs='?', choices=['list', 'edit'], default='list')
+parser.add_argument('args', nargs=argparse.REMAINDER)
+args = parser.parse_args()
+# print args
 
-        # TODO(burdon): Process flags
-        print 'DEBUG'
-        for arg in sys.argv:
-            print arg
+# Parse file.
+# TODO(burdon): Fails if not set; (default to ~/.nexus.log)
+log_file = args.file or os.environ['NEXUS_LOG']
+parser = Parser(log_file)
 
+# Process commands.
+if args.cmd == 'edit':
+    from subprocess import call
+    call(['vi', log_file])
 
-main()
-
+elif args.cmd == 'list':
+    parser.dump(args.args)
